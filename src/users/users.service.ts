@@ -25,7 +25,7 @@ export class UsersService {
 
     if (!hasAllRequiredFields || !hasCorrectTypes) {
       throw new BadRequestException(
-        `request body does not contain required fields. name should be string, age should be number, hobbies should be array`,
+        `request body does not contain required fields. Login should be string, password should be string`,
       );
     }
 
