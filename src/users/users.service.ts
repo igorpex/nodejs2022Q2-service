@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -62,21 +63,60 @@ export class UsersService {
       throw new BadRequestException(`userId ${id} is invalid (not uuid)`);
     }
 
+    // Check user exists
     const user: User = this.users.find((user) => user.id === id);
-
     if (!user) {
-      throw new NotFoundException('Post not found.');
+      throw new NotFoundException('User not found.');
     }
 
     return user;
     // return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  update(id: string, updateUserDto: UpdateUserDto) {
+    // return `This action updates a #${id} user`;
+    // check uuid is valid or return error
+    if (!validate(id) || !(version(id) === 4)) {
+      throw new BadRequestException(`userId ${id} is invalid (not uuid)`); //400
+    }
+    // Check user exists
+    const index: number = this.users.findIndex((user) => user.id === id);
+    // const user: User = this.users.find((user) => user.id === id);
+    if (index === -1) {
+      throw new NotFoundException('User not found.'); //404
+    }
+
+    // check old password is correct
+    const user: User = this.users[index];
+    if (user.password !== updateUserDto.oldPassowrd) {
+      throw new ForbiddenException('Old passowrd is wrong.'); //403
+    }
+
+    //create updated user
+    const updatedUser = {
+      id: id,
+      login: user.login,
+      version: user.version + 1,
+      createdAt: user.createdAt,
+      updatedAt: Date.now(),
+      password: updateUserDto.newPassword,
+    };
+    this.users[index] = updatedUser;
+    return updatedUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  remove(id: string) {
+    // return `This action removes a #${id} user`;
+    // check uuid is valid or return error
+    if (!validate(id) || !(version(id) === 4)) {
+      throw new BadRequestException(`userId ${id} is invalid (not uuid)`); //400
+    }
+    // Check user exists
+    const user: User = this.users.find((user) => user.id === id);
+    if (!user) {
+      throw new NotFoundException('User not found.'); //404
+    }
+    this.users = this.users.filter((user) => user.id !== id);
+    return;
   }
 }
