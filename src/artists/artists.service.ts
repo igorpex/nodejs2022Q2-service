@@ -7,10 +7,11 @@ import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
 import { Artist } from './entities/artist.entity';
 import { v4 as uuid, validate, version } from 'uuid';
+import { db } from 'src/data/db';
 
 @Injectable()
 export class ArtistsService {
-  private artists: Array<Artist> = [];
+  // private artists: Array<Artist> = [];
   create(createArtistDto: CreateArtistDto) {
     // return 'This action adds a new artist';
     //check required fields and types
@@ -30,13 +31,13 @@ export class ArtistsService {
       id: uuid(),
       ...createArtistDto,
     };
-    this.artists.push(newArtist);
+    db.artists.push(newArtist);
     return newArtist;
   }
 
   findAll() {
     // return `This action returns all artists`;
-    return this.artists;
+    return db.artists;
   }
 
   findOne(id: string) {
@@ -46,7 +47,7 @@ export class ArtistsService {
     }
 
     // Check artist exists
-    const artist: Artist = this.artists.find((artist) => artist.id === id);
+    const artist: Artist = db.artists.find((artist) => artist['id'] === id);
     if (!artist) {
       throw new NotFoundException('Artist not found.');
     }
@@ -59,10 +60,26 @@ export class ArtistsService {
     if (!validate(id) || !(version(id) === 4)) {
       throw new BadRequestException(`artistId ${id} is invalid (not uuid)`); //400
     }
+
+    //check required fields and types
+
+    const hasCorrectTypes =
+      typeof updateArtistDto.name === 'string' &&
+      typeof updateArtistDto.grammy === 'boolean';
+
+    if (!hasCorrectTypes) {
+      throw new BadRequestException(
+        `request body does not contain required fields. name should be string, grammy should be boolean`,
+      );
+    }
+    const hasAllRequiredFields = updateArtistDto.name && updateArtistDto.grammy;
+    if (!hasAllRequiredFields) {
+    }
+
     // Check artist exists
-    const index: number = this.artists.findIndex((artist) => artist.id === id);
-    // const artist: Artist = this.artists.find((artist) => artist.id === id);
-    if (index === -1) {
+    const index: number = db.artists.findIndex((artist) => artist['id'] === id);
+    const artist: Artist = db.artists.find((artist) => artist['id'] === id);
+    if (!artist) {
       throw new NotFoundException('Artist not found.'); //404
     }
 
@@ -71,7 +88,7 @@ export class ArtistsService {
       id: id,
       ...updateArtistDto,
     };
-    this.artists[index] = updatedArtist;
+    db.artists[index] = updatedArtist;
     return updatedArtist;
   }
 
@@ -82,11 +99,34 @@ export class ArtistsService {
       throw new BadRequestException(`artistId ${id} is invalid (not uuid)`); //400
     }
     // Check artist exists
-    const artist: Artist = this.artists.find((artist) => artist.id === id);
+    const artist: Artist = db.artists.find((artist) => artist['id'] === id);
     if (!artist) {
       throw new NotFoundException('Artist not found.'); //404
     }
-    this.artists = this.artists.filter((artist) => artist.id !== id);
+
+    // Null links in related entities
+
+    db.tracks = db.tracks.map((track) => {
+      if (track.artistId === id) {
+        track.artistId = null;
+      }
+      return track;
+    });
+
+    db.albums = db.tracks.map((album) => {
+      if (album.artistId === id) {
+        album.artistId = null;
+      }
+      return album;
+    });
+
+    // Remove from favorites
+    db.favorites.artists = db.favorites.artists.filter(
+      (artistId) => artistId !== id,
+    );
+
+    // Remove artist itself
+    db.artists = db.artists.filter((artist) => artist['id'] !== id);
     return;
   }
 }

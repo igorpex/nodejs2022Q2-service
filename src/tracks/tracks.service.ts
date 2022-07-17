@@ -7,10 +7,11 @@ import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { Track } from './entities/track.entity';
 import { v4 as uuid, validate, version } from 'uuid';
+import { db } from 'src/data/db';
 
 @Injectable()
 export class TracksService {
-  private tracks: Array<Track> = [];
+  // private tracks: Array<Track> = [];
   create(createTrackDto: CreateTrackDto) {
     // return 'This action adds a new track';
     //check required fields and types
@@ -30,13 +31,13 @@ export class TracksService {
       id: uuid(),
       ...createTrackDto,
     };
-    this.tracks.push(newTrack);
+    db.tracks.push(newTrack);
     return newTrack;
   }
 
   findAll() {
     // return `This action returns all tracks`;
-    return this.tracks;
+    return db.tracks;
   }
 
   findOne(id: string) {
@@ -46,7 +47,7 @@ export class TracksService {
     }
 
     // Check track exists
-    const track: Track = this.tracks.find((track) => track.id === id);
+    const track: Track = db.tracks.find((track) => track['id'] === id);
     if (!track) {
       throw new NotFoundException('Track not found.');
     }
@@ -60,10 +61,22 @@ export class TracksService {
       throw new BadRequestException(`trackId ${id} is invalid (not uuid)`); //400
     }
     // Check track exists
-    const index: number = this.tracks.findIndex((track) => track.id === id);
-    // const track: Track = this.tracks.find((track) => track.id === id);
+    const index: number = db.tracks.findIndex((track) => track['id'] === id);
+    // const track: Track = db.tracks.find((track) => track['id'] === id);
     if (index === -1) {
       throw new NotFoundException('Track not found.'); //404
+    }
+
+    //check required fields and types
+    const hasAllRequiredFields = updateTrackDto.name && updateTrackDto.duration;
+    const hasCorrectTypes =
+      typeof updateTrackDto.name === 'string' &&
+      typeof updateTrackDto.duration === 'number';
+
+    if (!hasAllRequiredFields || !hasCorrectTypes) {
+      throw new BadRequestException(
+        `request body does not contain required fields. name should be string, duration should be integer number`,
+      );
     }
 
     //create updated track
@@ -71,7 +84,7 @@ export class TracksService {
       id: id,
       ...updateTrackDto,
     };
-    this.tracks[index] = updatedTrack;
+    db.tracks[index] = updatedTrack;
     return updatedTrack;
   }
 
@@ -82,11 +95,24 @@ export class TracksService {
       throw new BadRequestException(`trackId ${id} is invalid (not uuid)`); //400
     }
     // Check track exists
-    const track: Track = this.tracks.find((track) => track.id === id);
+    const track: Track = db.tracks.find((track) => track['id'] === id);
     if (!track) {
       throw new NotFoundException('Track not found.'); //404
     }
-    this.tracks = this.tracks.filter((track) => track.id !== id);
+
+    // Null links in related entities
+    db.artists = db.artists.map((artist) => {
+      if (artist.trackId === id) artist.trackId = null;
+      return artist;
+    });
+
+    // Remove from favorites
+    db.favorites.tracks = db.favorites.tracks.filter(
+      (trackId) => trackId !== id,
+    );
+
+    // Remove track itself
+    db.tracks = db.tracks.filter((track) => track['id'] !== id);
     return;
   }
 }
