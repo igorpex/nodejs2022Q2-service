@@ -3,7 +3,8 @@ services:
   node:
     build: .
     command: npm run start:dev
-    image: igorpex/nodejs-2022q2-node
+    # command: npm audit fix && npm run start:dev
+    image: igorbogdanov/nodejs-2022q2-node
     container_name: nodejs-2022q2-node
     ports:
       - ${PORT}:${PORT}
@@ -20,7 +21,7 @@ services:
     restart: on-failure
   postgres:
     build: ./database/
-    image: igorpex/nodejs-2022q2-postgres
+    image: igorbogdanov/nodejs-2022q2-postgres
     container_name: nodejs-2022q2-postgres
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
