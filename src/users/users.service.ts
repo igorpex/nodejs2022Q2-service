@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-// import { User } from './entities/user.entity';
+import { User } from './entities/user.entity';
 import { v4 as uuid, validate, version } from 'uuid';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { plainToInstance } from 'class-transformer';
 // import { Users, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -50,8 +51,8 @@ export class UsersService {
     const user = await this.prisma.users.create({
       data: newUser,
     });
-    console.log(user);
-    return this.hidePassword(newUser);
+    // console.log(user);
+    return this.hidePassword(user);
   }
 
   async findAll() {
@@ -116,7 +117,8 @@ export class UsersService {
       data: updatedUserData,
       where: { id },
     });
-    return this.hidePassword(updatedUser);
+    return plainToInstance(User, updatedUser);
+    // return this.hidePassword(updatedUser);
   }
 
   async remove(id: string) {

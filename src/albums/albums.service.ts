@@ -7,7 +7,6 @@ import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 // import { Album } from './entities/album.entity';
 import { v4 as uuid, validate, version } from 'uuid';
-// import { db } from 'src/data/db';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -113,26 +112,8 @@ export class AlbumsService {
         },
       });
     } catch (error) {
-      console.log('####albums.service remove error:', error);
+      // console.log('####albums.service remove error:', error);
       throw new NotFoundException('Album not found.'); //404
     }
-
-    // Null links in related entities
-    // db.tracks = db.tracks.map((track) => {
-    //   if (track.albumId === id) {
-    //     track.albumId = null;
-    //     return track;
-    //   } else {
-    //     return track;
-    //   }
-    // });
-
-    // Remove from favorites
-    // db.favorites.albums = db.favorites.albums.filter(
-    //   (albumId) => albumId !== id,
-    // );
-    // Remove album itself
-    // db.albums = db.albums.filter((album) => album['id'] !== id);
-    // return;
   }
 }

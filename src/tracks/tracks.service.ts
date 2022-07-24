@@ -105,23 +105,8 @@ export class TracksService {
         },
       });
     } catch (error) {
-      console.log('####tracks.service remove error:', error);
+      // console.log('####tracks.service remove error:', error);
       throw new NotFoundException('Track not found.'); //404
     }
-
-    // Null links in related entities
-    // db.artists = db.artists.map((artist) => {
-    //   if (artist.trackId === id) artist.trackId = null;
-    //   return artist;
-    // });
-
-    // Remove from favorites
-    // db.favorites.tracks = db.favorites.tracks.filter(
-    //   (trackId) => trackId !== id,
-    // );
-
-    // Remove track itself
-    // db.tracks = db.tracks.filter((track) => track['id'] !== id);
-    // return;
   }
 }

@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
-import { Artist } from './entities/artist.entity';
 import { v4 as uuid, validate, version } from 'uuid';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -13,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class ArtistsService {
   constructor(private prisma: PrismaService) {}
   // private artists: Array<Artist> = [];
+
   async create(createArtistDto: CreateArtistDto) {
     // return 'This action adds a new artist';
     //check required fields and types
@@ -110,33 +110,8 @@ export class ArtistsService {
         },
       });
     } catch (error) {
-      console.log('####artists.service remove error:', error);
+      // console.log('####artists.service remove error:', error);
       throw new NotFoundException('Artist not found.'); //404
     }
-
-    // Null links in related entities
-
-    // db.tracks = db.tracks.map((track) => {
-    //   if (track.artistId === id) {
-    //     track.artistId = null;
-    //   }
-    //   return track;
-    // });
-
-    // db.albums = db.tracks.map((album) => {
-    //   if (album.artistId === id) {
-    //     album.artistId = null;
-    //   }
-    //   return album;
-    // });
-
-    // Remove from favorites
-    // db.favorites.artists = db.favorites.artists.filter(
-    //   (artistId) => artistId !== id,
-    // );
-
-    // Remove artist itself
-    // db.artists = db.artists.filter((artist) => artist['id'] !== id);
-    // return;
   }
 }
