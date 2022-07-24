@@ -3,12 +3,13 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { v4 as uuid, validate, version } from 'uuid';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 @Injectable()
 export class UsersService {
@@ -20,7 +21,7 @@ export class UsersService {
     return returnedUser;
   }
 
-  create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
     // return 'This action adds a new user';
 
     //check required fields and types
@@ -54,23 +55,35 @@ export class UsersService {
       updatedAt: createdAt,
       ...createUserDto,
     };
-    this.users.push(newUser);
+
+    const user = await prisma.users.create({
+      data: newUser,
+    });
+    console.log(user);
+    // this.users.push(newUser);
     return this.hidePassword(newUser);
   }
 
-  findAll() {
-    return this.users.map((user) => this.hidePassword(user));
+  async findAll() {
+    const users = await prisma.users.findMany();
+    return users;
+    // return this.users.map((user) => this.hidePassword(user));
     // return `This action returns all users`;
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     // check uuid is valid or return error
     if (!validate(id) || !(version(id) === 4)) {
       throw new BadRequestException(`userId ${id} is invalid (not uuid)`);
     }
 
     // Check user exists
-    const user: User = this.users.find((user) => user['id'] === id);
+    const user = await prisma.users.findUnique({
+      where: {
+        id,
+      },
+    });
+    // const user: User = this.users.find((user) => user['id'] === id);
     if (!user) {
       throw new NotFoundException('User not found.');
     }
@@ -79,7 +92,7 @@ export class UsersService {
     // return `This action returns a #${id} user`;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     // return `This action updates a #${id} user`;
 
     // Check user exists 1
@@ -95,21 +108,25 @@ export class UsersService {
       throw new BadRequestException(`userId ${id} is invalid (not uuid)`); //400
     }
 
-    // Check user exists 2
-    const index: number = this.users.findIndex((user) => user['id'] === id);
+    // Check user exists
+    const user = await prisma.users.findUnique({
+      where: {
+        id,
+      },
+    });
     // const user: User = this.users.find((user) => user['id'] === id);
-    if (index === -1) {
-      throw new NotFoundException('User not found.'); //404
+    if (!user) {
+      throw new NotFoundException('User not found.');
     }
 
     // check old password is correct
-    const user: User = this.users[index];
+
     if (user.password !== updateUserDto.oldPassword) {
       throw new ForbiddenException('Old passowrd is wrong.'); //403
     }
 
     //create updated user
-    const updatedUser = {
+    const updatedUserData = {
       id: id,
       login: user.login,
       version: user.version + 1,
@@ -117,24 +134,39 @@ export class UsersService {
       updatedAt: Date.now(),
       password: updateUserDto.newPassword,
     };
-    this.users[index] = updatedUser;
+    const updatedUser = await prisma.users.update({
+      data: updatedUserData,
+      where: { id },
+    });
+    // this.users[index] = updatedUser;
     return this.hidePassword(updatedUser);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     // return `This action removes a #${id} user`;
     // check uuid is valid or return error
     if (!validate(id) || !(version(id) === 4)) {
       throw new BadRequestException(`userId ${id} is invalid (not uuid)`); //400
     }
 
-    // Check user exists
-    const user: User = this.users.find((user) => user['id'] === id);
-    if (!user) {
+    //
+    try {
+      await prisma.users.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
       throw new NotFoundException('User not found.'); //404
     }
 
-    this.users = this.users.filter((user) => user['id'] !== id);
-    return;
+    // Check user exists
+    // const user: User = this.users.find((user) => user['id'] === id);
+    // if (!user) {
+    //   throw new NotFoundException('User not found.'); //404
+    // }
+
+    // this.users = this.users.filter((user) => user['id'] !== id);
+    // return;
   }
 }
