@@ -6,14 +6,15 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+// import { User } from './entities/user.entity';
 import { v4 as uuid, validate, version } from 'uuid';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaService } from 'src/prisma/prisma.service';
+// import { Users, Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  private users: Array<User> = [];
+  // private users: Array<User> = [];
+  constructor(private prisma: PrismaService) {}
 
   hidePassword(user) {
     const returnedUser = JSON.parse(JSON.stringify(user));
@@ -36,16 +37,6 @@ export class UsersService {
       );
     }
 
-    // check that user does not exist
-    // const userExists: boolean = this.users.some(
-    //   (user) => user.login === createUserDto.login,
-    // );
-    // if (userExists) {
-    //   throw new UnprocessableEntityException(
-    //     `User with login ${createUserDto.login} already exists.`,
-    //   );
-    // }
-
     // create a user, with random id, version and created time and data sent
     const createdAt = Date.now();
     const newUser = {
@@ -56,19 +47,16 @@ export class UsersService {
       ...createUserDto,
     };
 
-    const user = await prisma.users.create({
+    const user = await this.prisma.users.create({
       data: newUser,
     });
     console.log(user);
-    // this.users.push(newUser);
     return this.hidePassword(newUser);
   }
 
   async findAll() {
-    const users = await prisma.users.findMany();
-    return users;
-    // return this.users.map((user) => this.hidePassword(user));
-    // return `This action returns all users`;
+    const users = await this.prisma.users.findMany();
+    return users.map((user) => this.hidePassword(user));
   }
 
   async findOne(id: string) {
@@ -78,30 +66,21 @@ export class UsersService {
     }
 
     // Check user exists
-    const user = await prisma.users.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: {
         id,
       },
     });
-    // const user: User = this.users.find((user) => user['id'] === id);
+
     if (!user) {
       throw new NotFoundException('User not found.');
     }
 
     return this.hidePassword(user);
-    // return `This action returns a #${id} user`;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     // return `This action updates a #${id} user`;
-
-    // Check user exists 1
-    // const userExists: boolean = this.users.some(
-    //   (user) => user.login === updateUserDto.login,
-    // );
-    // if (!userExists) {
-    //   throw new NotFoundException('User not found.'); //404
-    // }
 
     // check uuid is valid or return error
     if (!validate(id) || !(version(id) === 4)) {
@@ -109,18 +88,17 @@ export class UsersService {
     }
 
     // Check user exists
-    const user = await prisma.users.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: {
         id,
       },
     });
-    // const user: User = this.users.find((user) => user['id'] === id);
+
     if (!user) {
       throw new NotFoundException('User not found.');
     }
 
     // check old password is correct
-
     if (user.password !== updateUserDto.oldPassword) {
       throw new ForbiddenException('Old passowrd is wrong.'); //403
     }
@@ -134,11 +112,10 @@ export class UsersService {
       updatedAt: Date.now(),
       password: updateUserDto.newPassword,
     };
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await this.prisma.users.update({
       data: updatedUserData,
       where: { id },
     });
-    // this.users[index] = updatedUser;
     return this.hidePassword(updatedUser);
   }
 
@@ -151,7 +128,7 @@ export class UsersService {
 
     //
     try {
-      await prisma.users.delete({
+      await this.prisma.users.delete({
         where: {
           id,
         },
